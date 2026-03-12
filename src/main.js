@@ -25,7 +25,7 @@ const viewerOptions = {
     sharedMemoryForWorkers: false,
     integerBasedSort: false,
     halfPrecisionCovariancesOnGPU: false,
-    dynamicScene: false,
+    dynamicScene: true,
     webXRMode: GaussianSplats3D.WebXRMode.None,
     renderMode: GaussianSplats3D.RenderMode.Always,
     sceneRevealMode: GaussianSplats3D.SceneRevealMode.Gradual,
@@ -36,6 +36,9 @@ const viewerOptions = {
     enableOptionalEffects: false,
     inMemoryCompressionLevel: 0,
     freeIntermediateSplatData: false,
+    sinWaveAnimation: false,
+    sinWaveAmplitude: 0.5,
+    sinWaveFrequency: 1.0,
 };
 
 const gui = new GUI({ title: 'Viewer' });
@@ -50,6 +53,8 @@ let fallbackInProgress = false;
 let rebuildInProgress = false;
 let operationQueue = Promise.resolve();
 let lastWorkingViewerOptions = { ...viewerOptions };
+let originalSplatPositions = null;
+let animationStartTime = Date.now();
 
 function refreshGuiDisplay() {
     if (typeof gui.controllersRecursive === 'function') {
@@ -109,11 +114,53 @@ function stopManualLoop() {
     }
 }
 
+function applysinWaveAnimation() {
+    if (!viewer || !originalSplatPositions || !viewerOptions.sinWaveAnimation) {
+        return;
+    }
+
+    const elapsed = (Date.now() - animationStartTime) * 0.001;
+    const sceneCount = viewer.getSceneCount();
+
+    for (let sceneIdx = 0; sceneIdx < sceneCount; sceneIdx++) {
+        const scene = viewer.getScene(sceneIdx);
+        if (!scene || !scene.splatBuffer) {
+            continue;
+        }
+
+        const posData = scene.splatBuffer.getPosition(0);
+        if (!posData) continue;
+
+        const positions = posData.data || posData;
+        if (!positions || !originalSplatPositions[sceneIdx]) {
+            continue;
+        }
+
+        const origPos = originalSplatPositions[sceneIdx];
+        const amp = viewerOptions.sinWaveAmplitude;
+        const freq = viewerOptions.sinWaveFrequency;
+
+        for (let i = 0; i < origPos.length; i += 3) {
+            const x = origPos[i];
+            const y = origPos[i + 1];
+            const z = origPos[i + 2];
+            const offset = x + y + z;
+            const wave = Math.sin(elapsed * freq + offset) * amp;
+            positions[i] = x;
+            positions[i + 1] = y + wave;
+            positions[i + 2] = z;
+        }
+
+        scene.splatBuffer.updatePositions(posData);
+    }
+}
+
 function startManualLoop(instance) {
     const tick = () => {
         if (viewer !== instance) {
             return;
         }
+        applysinWaveAnimation();
         if (typeof instance.update === 'function') {
             instance.update();
         }
@@ -211,7 +258,34 @@ async function loadSplatScene(path, label, format) {
         format,
         showLoadingUI: true,
     });
+
+    // Capture original positions for sin wave animation
+    captureOriginalPositions();
+    animationStartTime = Date.now();
+
     statusEl.textContent = `${label} loaded`;
+}
+
+function captureOriginalPositions() {
+    if (!viewer) return;
+
+    originalSplatPositions = {};
+    const sceneCount = viewer.getSceneCount();
+
+    for (let sceneIdx = 0; sceneIdx < sceneCount; sceneIdx++) {
+        const scene = viewer.getScene(sceneIdx);
+        if (!scene || !scene.splatBuffer) {
+            continue;
+        }
+
+        const posData = scene.splatBuffer.getPosition(0);
+        if (!posData) continue;
+
+        const positions = posData.data || posData;
+        if (positions) {
+            originalSplatPositions[sceneIdx] = new Float32Array(positions);
+        }
+    }
 }
 
 async function reloadLastScene() {
@@ -480,9 +554,18 @@ rebuildOnChange(advancedFolder.add(viewerOptions, 'enableOptionalEffects').name(
 rebuildOnChange(advancedFolder.add(viewerOptions, 'inMemoryCompressionLevel', 0, 2, 1).name('inMemoryCompressionLevel'));
 rebuildOnChange(advancedFolder.add(viewerOptions, 'freeIntermediateSplatData').name('freeIntermediateSplatData'));
 
+advancedFolder.add(viewerOptions, 'sinWaveAnimation').name('Sin Wave').onChange(() => {
+    if (viewerOptions.sinWaveAnimation) {
+        captureOriginalPositions();
+        animationStartTime = Date.now();
+    }
+});
+advancedFolder.add(viewerOptions, 'sinWaveAmplitude', 0, 2, 0.1).name('Wave Amplitude');
+advancedFolder.add(viewerOptions, 'sinWaveFrequency', 0.1, 5, 0.1).name('Wave Frequency');
+
 advancedFolder.close();
 
-const defaultStartupUrl = (urlInput.value || 'data/sample.ksplat').trim();
+const defaultStartupUrl = (urlInput.value || 'data/chain.ksplat').trim();
 if (defaultStartupUrl) {
     queueViewerOperation(async () => {
         await loadSplatFromUrl(defaultStartupUrl);
