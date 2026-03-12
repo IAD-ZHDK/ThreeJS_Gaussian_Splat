@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js Gaussian Splats Viewer</title>
+  <script type="module" crossorigin src="/ThreeJS_Gaussian_Splat/assets/index-JdGPGwTd.js"></script>
+  <link rel="stylesheet" crossorigin href="/ThreeJS_Gaussian_Splat/assets/index-C9qEQdYA.css">
+</head>
+
+<body>
+    <div id="ui">
+        <label>
+            Load Scene
+            <input id="plyInput" type="file" accept=".ply,.splat,.ksplat" />
+        </label>
+        <label>
+            URL
+            <input id="plyUrl" type="text" value="/data/sample.ksplat" />
+        </label>
+        <button id="loadUrl" type="button">Load URL</button>
+        <button id="resetView" type="button">Reset View</button>
+        <button id="helpToggle" type="button" aria-expanded="false" aria-controls="helpPanel">?</button>
+        <span id="status">No file loaded</span>
+    </div>
+    <div id="helpPanel" hidden>
+        <h3>Shortcuts</h3>
+        <ul>
+            <li><strong>Left click</strong>: set the focal point</li>
+            <li><strong>Left click + drag</strong>: orbit</li>
+            <li><strong>Right click + drag</strong>: pan</li>
+        </ul>
+        <h4>Keyboard input</h4>
+        <ul>
+            <li><strong>I</strong>: Display debug info panel</li>
+            <li><strong>C</strong>: Toggle mesh cursor</li>
+            <li><strong>U</strong>: Toggle controls orientation marker</li>
+            <li><strong>←</strong>: Rotate camera-up counter-clockwise</li>
+            <li><strong>→</strong>: Rotate camera-up clockwise</li>
+            <li><strong>P</strong>: Toggle point-cloud mode</li>
+            <li><strong>O</strong>: Toggle orthographic mode</li>
+            <li><strong>=</strong>: Increase splat scale</li>
+            <li><strong>-</strong>: Decrease splat scale</li>
+        </ul>
+    </div>
+    <div id="app"></div>
+</body>
+
+</html>
