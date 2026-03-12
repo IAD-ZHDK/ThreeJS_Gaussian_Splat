@@ -482,7 +482,7 @@ rebuildOnChange(advancedFolder.add(viewerOptions, 'freeIntermediateSplatData').n
 
 advancedFolder.close();
 
-const defaultStartupUrl = (urlInput.value || '/data/sample.ksplat').trim();
+const defaultStartupUrl = (urlInput.value || 'data/sample.ksplat').trim();
 if (defaultStartupUrl) {
     queueViewerOperation(async () => {
         await loadSplatFromUrl(defaultStartupUrl);
