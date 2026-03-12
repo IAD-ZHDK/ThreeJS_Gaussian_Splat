@@ -37,7 +37,7 @@ const viewerOptions = {
     inMemoryCompressionLevel: 0,
     freeIntermediateSplatData: false,
     sinWaveAnimation: false,
-    sinWaveAmplitude: 0.5,
+    sinWaveAmplitude: 1.5,
     sinWaveFrequency: 1.0,
 };
 
@@ -124,21 +124,25 @@ function applysinWaveAnimation() {
 
     for (let sceneIdx = 0; sceneIdx < sceneCount; sceneIdx++) {
         const scene = viewer.getScene(sceneIdx);
-        if (!scene || !scene.splatBuffer) {
+        if (!scene) {
             continue;
         }
 
-        const posData = scene.splatBuffer.getPosition(0);
-        if (!posData) continue;
+        // Try to access the Three.js mesh via the scene object
+        const mesh = scene.mesh || scene.threeScene?.children?.[0];
+        if (!mesh || !mesh.geometry) {
+            continue;
+        }
 
-        const positions = posData.data || posData;
-        if (!positions || !originalSplatPositions[sceneIdx]) {
+        const posAttr = mesh.geometry.getAttribute('position');
+        if (!posAttr || !originalSplatPositions[sceneIdx]) {
             continue;
         }
 
         const origPos = originalSplatPositions[sceneIdx];
         const amp = viewerOptions.sinWaveAmplitude;
         const freq = viewerOptions.sinWaveFrequency;
+        const array = posAttr.array;
 
         for (let i = 0; i < origPos.length; i += 3) {
             const x = origPos[i];
@@ -146,12 +150,12 @@ function applysinWaveAnimation() {
             const z = origPos[i + 2];
             const offset = x + y + z;
             const wave = Math.sin(elapsed * freq + offset) * amp;
-            positions[i] = x;
-            positions[i + 1] = y + wave;
-            positions[i + 2] = z;
+            array[i] = x;
+            array[i + 1] = y + wave;
+            array[i + 2] = z;
         }
 
-        scene.splatBuffer.updatePositions(posData);
+        posAttr.needsUpdate = true;
     }
 }
 
@@ -274,16 +278,22 @@ function captureOriginalPositions() {
 
     for (let sceneIdx = 0; sceneIdx < sceneCount; sceneIdx++) {
         const scene = viewer.getScene(sceneIdx);
-        if (!scene || !scene.splatBuffer) {
+        if (!scene) {
             continue;
         }
 
-        const posData = scene.splatBuffer.getPosition(0);
-        if (!posData) continue;
+        // Try to access the Three.js mesh via the scene object
+        const mesh = scene.mesh || scene.threeScene?.children?.[0];
+        if (!mesh || !mesh.geometry) {
+            continue;
+        }
 
-        const positions = posData.data || posData;
-        if (positions) {
-            originalSplatPositions[sceneIdx] = new Float32Array(positions);
+        const posAttr = mesh.geometry.getAttribute('position');
+        if (!posAttr) continue;
+
+        const array = posAttr.array;
+        if (array) {
+            originalSplatPositions[sceneIdx] = new Float32Array(array);
         }
     }
 }
