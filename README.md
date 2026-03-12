@@ -19,3 +19,5 @@ Open the shown local URL in your browser.
 
 - **Local file:** click **Load Scene** and pick a file.
 - **URL:** enter a path (e.g. `/data/sample.ksplat`) and click **Load URL**.
+
+Convert to Ksplat data here: https://projects.markkellogg.org/threejs/demo_gaussian_splats_3d.php
