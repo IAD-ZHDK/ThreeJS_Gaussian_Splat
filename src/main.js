@@ -55,6 +55,18 @@ let operationQueue = Promise.resolve();
 let lastWorkingViewerOptions = { ...viewerOptions };
 let originalSplatPositions = null;
 let animationStartTime = Date.now();
+let globalAnimationFrameId = 0;
+
+function startGlobalAnimationLoop() {
+    if (globalAnimationFrameId) {
+        cancelAnimationFrame(globalAnimationFrameId);
+    }
+    const tick = () => {
+        applysinWaveAnimation();
+        globalAnimationFrameId = requestAnimationFrame(tick);
+    };
+    globalAnimationFrameId = requestAnimationFrame(tick);
+}
 
 function refreshGuiDisplay() {
     if (typeof gui.controllersRecursive === 'function') {
@@ -128,14 +140,38 @@ function applysinWaveAnimation() {
             continue;
         }
 
-        // Try to access the Three.js mesh via the scene object
-        const mesh = scene.mesh || scene.threeScene?.children?.[0];
-        if (!mesh || !mesh.geometry) {
+        // Debug: log scene structure
+        console.log('Scene object keys:', Object.keys(scene));
+        console.log('Scene object:', scene);
+
+        // Try multiple ways to access the mesh/geometry
+        let mesh = scene.mesh || scene.threeScene?.children?.[0];
+
+        if (!mesh) {
+            // Try accessing through the viewer's internal three scene
+            if (viewer.renderer && viewer.renderer.getContext()) {
+                const threeScene = viewer.getScene(sceneIdx).threeScene;
+                if (threeScene && threeScene.children) {
+                    mesh = threeScene.children[0];
+                }
+            }
+        }
+
+        if (!mesh) {
+            console.warn('Could not find mesh for scene', sceneIdx);
+            continue;
+        }
+
+        console.log('Found mesh:', mesh);
+
+        if (!mesh.geometry) {
+            console.warn('Mesh has no geometry');
             continue;
         }
 
         const posAttr = mesh.geometry.getAttribute('position');
         if (!posAttr || !originalSplatPositions[sceneIdx]) {
+            console.warn('No position attribute or original positions');
             continue;
         }
 
@@ -220,6 +256,9 @@ function createViewer() {
 }
 
 viewer = createViewer();
+
+// Start global animation loop for sin wave effect
+startGlobalAnimationLoop();
 
 function inferSceneFormat(sourceName) {
     const lowerName = sourceName.toLowerCase();
