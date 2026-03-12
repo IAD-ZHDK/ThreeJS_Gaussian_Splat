@@ -1,5 +1,7 @@
 # Three.js Gaussian Splats Viewer
 
+[![Deploy to GitHub Pages](https://github.com/IAD-ZHDK/ThreeJS_Gaussian_Splat/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/IAD-ZHDK/ThreeJS_Gaussian_Splat/actions/workflows/deploy-pages.yml)
+
 Loads `.ply`, `.splat`, or `.ksplat` scenes using `@mkkellogg/gaussian-splats-3d`.
 
 ## Run
